@@ -2,7 +2,8 @@
 
 import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import axios from 'axios';
+import api from '@/lib/axios';  // 👈 import the configured axios instance
+import { useAuth } from '@/context/AuthContext'; // optional: to show role messages
 
 interface UploadResponse {
   filename: string;
@@ -21,6 +22,7 @@ export default function FileUploader() {
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<UploadResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth(); // optional: get current user role for UI hints
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) return;
@@ -33,11 +35,10 @@ export default function FileUploader() {
     formData.append('file', file);
 
     try {
-      const response = await axios.post<UploadResponse>(
-        'http://localhost:8000/upload',  // Your backend URL
-        formData,
-        { headers: { 'Content-Type': 'multipart/form-data' } }
-      );
+      // Use api instead of axios
+      const response = await api.post<UploadResponse>('/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
       setResult(response.data);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Upload failed');
@@ -56,6 +57,14 @@ export default function FileUploader() {
 
   return (
     <div className="w-full max-w-2xl mx-auto p-4">
+      {/* Optional role hint */}
+      {user?.role === 'billing_specialist' && (
+        <p className="text-sm text-blue-600 mb-2">You can only upload 837 files.</p>
+      )}
+      {user?.role === 'benefits_admin' && (
+        <p className="text-sm text-green-600 mb-2">You can only upload 834 files.</p>
+      )}
+
       <div
         {...getRootProps()}
         className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
