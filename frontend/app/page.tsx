@@ -1,16 +1,31 @@
 'use client';
 
+import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import FileUploader from '@/components/FileUploader';
+import ChatPanel from '@/components/ChatPanel';
 import Link from 'next/link';
 
 export default function Home() {
   const { user, logout } = useAuth();
+  const [activeFileId, setActiveFileId] = useState<string | null>(null);
+  const [activeFileType, setActiveFileType] = useState<string | null>(null);
+
+  const handleUploadComplete = (fileId: string, fileType: string) => {
+    setActiveFileId(fileId);
+    setActiveFileType(fileType);
+  };
+
+  const closeChat = () => {
+    setActiveFileId(null);
+    setActiveFileType(null);
+  };
 
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">
+        {/* Navbar */}
         <nav className="bg-white shadow p-4">
           <div className="container mx-auto flex justify-between items-center">
             <h1 className="text-xl font-bold">EDI Parser</h1>
@@ -33,7 +48,8 @@ export default function Home() {
           </div>
         </nav>
 
-        <main className="container mx-auto py-8">
+        {/* Main Content */}
+        <main className="container mx-auto py-8 px-4">
           <h2 className="text-3xl font-bold text-center mb-2">
             US Healthcare EDI Parser
           </h2>
@@ -41,7 +57,6 @@ export default function Home() {
             Upload 837, 835, or 834 files for validation
           </p>
 
-          {/* Optionally show role-specific messages */}
           {user?.role === 'billing_specialist' && (
             <p className="text-center text-sm text-blue-600 mb-4">
               You can only upload 837 files.
@@ -53,7 +68,24 @@ export default function Home() {
             </p>
           )}
 
-          <FileUploader />
+          <FileUploader onUploadComplete={handleUploadComplete} />
+
+          {/* Chat Panel – appears below the uploader after a file is uploaded */}
+          {activeFileId && activeFileType && (
+            <div className="mt-8 border rounded-lg bg-white shadow-sm">
+              <div className="flex justify-between items-center p-4 border-b">
+                <h2 className="font-bold text-lg">🤖 AI Assistant</h2>
+                <button
+                  onClick={closeChat}
+                  className="text-gray-500 hover:text-gray-700 text-xl"
+                  title="Close chat"
+                >
+                  ✕
+                </button>
+              </div>
+              <ChatPanel fileId={activeFileId} fileType={activeFileType} />
+            </div>
+          )}
         </main>
       </div>
     </ProtectedRoute>
